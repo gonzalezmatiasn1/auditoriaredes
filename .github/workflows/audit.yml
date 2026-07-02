@@ -1,0 +1,50 @@
+name: Auditoría Instagram TEMPLE
+
+on:
+  workflow_dispatch:
+    inputs:
+      bar:
+        description: "Handle del bar (ej: casatemple)"
+        required: true
+      mes:
+        description: "Mes auditado (YYYY-MM)"
+        required: true
+      contenido:
+        description: "Tu lectura del perfil (texto libre)"
+        required: true
+      kv:
+        description: "KV enviado por la marca ese mes"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ejecutar auditoría con Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BAR: ${{ github.event.inputs.bar }}
+          MES: ${{ github.event.inputs.mes }}
+          CONTENIDO: ${{ github.event.inputs.contenido }}
+          KV: ${{ github.event.inputs.kv }}
+        run: node .github/scripts/audit.mjs
+
+      - name: Commit y push del resultado
+        env:
+          BAR: ${{ github.event.inputs.bar }}
+          MES: ${{ github.event.inputs.mes }}
+        run: |
+          git config user.name "temple-audit-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          git diff --quiet --cached || git commit -m "Auditoría ${BAR} ${MES}"
+          git push
