@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TEMPLE — Auditorías IG</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #1c1a1b;
+    --surface: #262324;
+    --surface-2: #302c2d;
+    --line: #423d3e;
+    --text: #f8f7f7;
+    --muted: #a89fa0;
+    --teal: #209895;
+    --teal-dim: #156b69;
+    --pink: #d40967;
+    --pink-dim: #9c0a4c;
+    --yellow: #ffdd00;
+    --pass: var(--teal);
+    --pass-bg: rgba(32, 152, 149, 0.14);
+    --fail: var(--pink);
+    --fail-bg: rgba(212, 9, 103, 0.14);
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+  }
+
+  .display { font-family: 'Anton', sans-serif; letter-spacing: 0.02em; text-transform: uppercase; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 26px 32px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand .mark { color: var(--teal); font-size: 13px; letter-spacing: 0.3em; font-weight: 600; }
+  .brand h1 { font-size: 32px; margin: 6px 0 2px; font-weight: 400; }
+  .brand .sub { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; }
+
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+
+  .tabs { display: flex; gap: 4px; padding: 0 32px; border-bottom: 1px solid var(--line); }
+  .tab-btn {
+    background: transparent; border: none; color: var(--muted); font-family: 'Poppins', sans-serif;
+    font-weight: 600; font-size: 13.5px; padding: 12px 4px; margin-right: 22px; cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--teal); }
+
+  select, input[type="month"], input[type="text"], input[type="password"], input[type="number"], textarea {
+    background: var(--surface); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 10px 12px; font-family: 'Poppins', sans-serif; font-size: 14px;
+  }
+  select:focus, input:focus, textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+  button {
+    font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 14px; border-radius: 8px;
+    padding: 10px 16px; border: 1px solid var(--teal); background: var(--teal); color: #052423; cursor: pointer;
+  }
+  button:hover { background: #26aca9; }
+  button.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+  button.ghost:hover { border-color: var(--teal); color: var(--teal); }
+  button.danger { background: var(--pink); border-color: var(--pink); color: #370019; }
+  button.danger:hover { background: #ea2a7c; }
+  button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  main { padding: 24px 32px 60px; max-width: 1400px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .summary-bar {
+    display: flex; gap: 28px; align-items: baseline; margin-bottom: 20px; color: var(--muted);
+    font-size: 13px; flex-wrap: wrap;
+  }
+  .summary-bar b { color: var(--text); font-size: 15px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 18px 16px; position: relative; display: flex; flex-direction: column; gap: 12px;
+  }
+  .card.empty { opacity: 0.55; }
+
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card-head .handle { font-size: 16px; font-weight: 700; }
+  .card-head .handle::before { content: "@"; color: var(--muted); font-weight: 500; }
+
+  .score-row { display: flex; align-items: baseline; gap: 10px; }
+  .score-row .num { font-family: 'Anton', sans-serif; font-size: 40px; line-height: 1; color: var(--teal); }
+  .score-row .num.fail { color: var(--pink); }
+  .score-row .max { color: var(--muted); font-size: 13px; }
+
+  .seal {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; padding: 4px 9px; border-radius: 999px;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .seal.pass { color: var(--teal); background: var(--pass-bg); border: 1px solid var(--teal); }
+  .seal.fail { color: var(--pink); background: var(--fail-bg); border: 1px solid var(--pink); }
+  .seal.none { color: var(--muted); background: rgba(255,255,255,0.03); border: 1px solid var(--line); }
+
+  .bars { display: flex; flex-direction: column; gap: 6px; }
+  .bar-row { display: grid; grid-template-columns: 118px 1fr 40px; gap: 8px; align-items: center; font-size: 11px; color: var(--muted); }
+  .bar-track { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--teal); border-radius: 999px; }
+
+  details summary { cursor: pointer; font-size: 12px; color: var(--muted); list-style: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: "› ver detalle"; }
+  details[open] summary::before { content: "‹ cerrar detalle"; }
+  .detail-body { margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted); display: flex; flex-direction: column; gap: 10px; }
+  .detail-body b { color: var(--text); }
+  .plan { padding-left: 18px; margin: 4px 0 0; }
+  .plan li { margin-bottom: 4px; }
+
+  .crit-edit { display: grid; grid-template-columns: 60px 1fr; gap: 8px; align-items: start; margin-bottom: 8px; }
+  .crit-edit input[type="number"] { width: 56px; padding: 6px 8px; font-size: 13px; }
+  .crit-edit textarea { width: 100%; min-height: 44px; font-size: 12.5px; padding: 6px 8px; }
+  .plan-edit textarea { width: 100%; min-height: 60px; font-size: 12.5px; padding: 6px 8px; }
+  .edit-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .edit-actions button { padding: 7px 12px; font-size: 12.5px; }
+  .edit-toggle { font-size: 11.5px; color: var(--muted); background: none; border: none; padding: 0; text-decoration: underline; cursor: pointer; }
+  .edit-toggle:hover { color: var(--teal); }
+  .save-status { font-size: 11.5px; }
+  .save-status.ok { color: var(--teal); }
+  .save-status.err { color: var(--pink); }
+
+  .empty-msg { color: var(--muted); font-size: 13px; }
+
+  /* Histórico */
+  .hist-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+  .hist-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 18px; }
+  .hist-table th { text-align: left; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .hist-table td { padding: 10px; border-bottom: 1px solid var(--line); }
+  .hist-chart { display: flex; align-items: flex-end; gap: 10px; height: 160px; padding: 10px 0 0; }
+  .hist-chart .col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; height: 100%; justify-content: flex-end; }
+  .hist-chart .bar { width: 100%; max-width: 42px; border-radius: 4px 4px 0 0; background: var(--teal); }
+  .hist-chart .bar.fail { background: var(--pink); }
+  .hist-chart .lbl { font-size: 10.5px; color: var(--muted); }
+  .hist-chart .val { font-size: 11px; color: var(--text); font-weight: 600; }
+
+  /* Modal */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(10,9,9,0.72); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+  .modal-backdrop.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 26px; width: 100%; max-width: 580px; max-height: 88vh; overflow-y: auto; }
+  .modal h2 { font-family: 'Anton', sans-serif; text-transform: uppercase; font-weight: 400; font-size: 24px; margin: 0 0 4px; letter-spacing: 0.02em; }
+  .modal .hint { color: var(--muted); font-size: 12.5px; margin-bottom: 18px; }
+  .modal .hint.warn { color: var(--yellow); }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .field label { font-size: 12.5px; color: var(--muted); font-weight: 600; }
+  textarea { min-height: 130px; resize: vertical; font-family: 'Poppins', sans-serif; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+  .status-msg { font-size: 12.5px; margin-top: 10px; }
+  .status-msg.ok { color: var(--teal); }
+  .status-msg.err { color: var(--pink); }
+
+  footer { text-align: center; color: var(--muted); font-size: 11.5px; padding: 20px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: border-color 0.15s ease; }
+    .card:hover { border-color: var(--teal-dim); }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div>
+      <div class="mark">TEMPLE</div>
+      <h1>Auditorías IG</h1>
+      <div class="sub">Frecuencia · Tono y estética según KV · Destacadas obligatorias</div>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-view="mes">Auditorías del mes</button>
+  <button class="tab-btn" data-view="historico">Histórico por bar</button>
+</div>
+
+<main>
+  <div class="view active" id="viewMes">
+    <div class="controls">
+      <select id="mesSelect"></select>
+      <button class="ghost" id="btnConfig" title="Configurar repo y token">⚙ Config</button>
+      <button id="btnNueva">＋ Cargar auditoría</button>
+    </div>
+    <div class="summary-bar" id="summaryBar"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="view" id="viewHistorico">
+    <div class="hist-controls">
+      <select id="histBarSelect"></select>
+    </div>
+    <div id="histContent"></div>
+  </div>
+</main>
+
+<footer>Datos leídos directamente desde <span class="mono" id="repoLabel">este repositorio</span> · umbral de aprobación 80/100</footer>
+
+<!-- Modal: nueva auditoría -->
+<div class="modal-backdrop" id="modalAuditoria">
+  <div class="modal">
+    <h2>Cargar auditoría</h2>
+    <div class="hint">Describí en texto cómo ves el perfil este mes. La IA convierte tu lectura al formato de auditoría, aplicando la rúbrica y comparando contra el KV que pegues abajo.</div>
+    <div class="field">
+      <label for="inpBar">Bar</label>
+      <select id="inpBar"></select>
+    </div>
+    <div class="field">
+      <label for="inpMes">Mes auditado</label>
+      <input type="month" id="inpMes" />
+    </div>
+    <div class="field">
+      <label for="inpContenido">Tu lectura del perfil</label>
+      <textarea id="inpContenido" placeholder="Describí lo que ves, en tus palabras: cuántas veces posteó en el mes, cómo es el tono (repetitivo, con CTA, etc.), cómo se ve la estética (tipografías, KV, imágenes), y si están las 3 destacadas obligatorias (Menú, Horarios, Reservas) o cuáles faltan."></textarea>
+    </div>
+    <div class="field">
+      <label for="inpKV">KV enviado ese mes (referencia de la marca)</label>
+      <textarea id="inpKV" placeholder="Pegá el copy/brief o la descripción del KV que TEMPLE mandó para ese mes, para comparar tono y estética contra eso."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="btnCancelarAuditoria">Cancelar</button>
+      <button id="btnDispararAuditoria">Analizar con IA</button>
+    </div>
+    <div class="status-msg" id="auditoriaStatus"></div>
+  </div>
+</div>
+
+<!-- Modal: config -->
+<div class="modal-backdrop" id="modalConfig">
+  <div class="modal">
+    <h2>Configuración</h2>
+    <div class="hint" id="configHint">El token queda guardado solo en tu navegador (localStorage), nunca se sube al repo. Necesita permiso "Actions: Read and write" y "Contents: Read and write" sobre este repositorio.</div>
+    <div class="field">
+      <label for="cfgOwner">Owner (usuario u organización de GitHub)</label>
+      <input type="text" id="cfgOwner" placeholder="ej: matiasgonzalez" />
+    </div>
+    <div class="field">
+      <label for="cfgRepo">Repositorio</label>
+      <input type="text" id="cfgRepo" placeholder="ej: temple-auditorias" />
+    </div>
+    <div class="field">
+      <label for="cfgToken">GitHub Token (personal access token, fine-grained)</label>
+      <input type="password" id="cfgToken" placeholder="ghp_..." />
+    </div>
+    <div class="modal-actions">
+      <button class="ghost" id="btnCancelarConfig">Cancelar</button>
+      <button id="btnGuardarConfig">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const BARES = [
+    "casatemple","templebarriochino","templehollywood","templepuertomadero",
+    "clubtemple","templecaminito","templemaschwitz",
+    "templecatedral","templecordoba","templesalta","templetucuman",
+    "templecomodoro","templeriogallegos","templerosario","templesgo"
+  ];
+
+  const CRITERIOS_LABELS = {
+    frecuencia: "Frecuencia (8/mes)",
+    tono_contenido: "Tono según KV",
+    estetica_visual: "Estética según KV",
+    historias_destacadas: "Destacadas obligatorias"
+  };
+
+  function detectRepoFromLocation() {
+    const host = location.hostname;
+    const owner = host.endsWith(".github.io") ? host.split(".")[0] : null;
+    const parts = location.pathname.split("/").filter(Boolean);
+    const repo = parts.length ? parts[0] : null;
+    return { owner, repo };
+  }
+
+  function loadConfig() {
+    const stored = JSON.parse(localStorage.getItem("temple_audit_config") || "{}");
+    const detected = detectRepoFromLocation();
+    return {
+      owner: stored.owner || detected.owner || "",
+      repo: stored.repo || detected.repo || "",
+      token: stored.token || ""
+    };
+  }
+  function saveConfig(cfg) { localStorage.setItem("temple_audit_config", JSON.stringify(cfg)); }
+
+  let config = loadConfig();
+  let allData = []; // { bar, mes, sha, path, ...resultado }
+
+  document.getElementById("repoLabel").textContent = config.owner && config.repo
+    ? `${config.owner}/${config.repo}` : "(configurá el repo en ⚙ Config)";
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById(btn.dataset.view === "mes" ? "viewMes" : "viewHistorico").classList.add("active");
+      if (btn.dataset.view === "historico") renderHistorico();
+    });
+  });
+
+  // ---------- Carga de datos públicos (sin auth) ----------
+  async function fetchData() {
+    if (!config.owner || !config.repo) return;
+    try {
+      const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/data`);
+      if (!res.ok) { allData = []; render(); return; }
+      const files = await res.json();
+      const jsonFiles = files.filter(f => f.name.endsWith(".json"));
+      const results = await Promise.all(jsonFiles.map(async f => {
+        try {
+          const r = await fetch(f.download_url);
+          const json = await r.json();
+          json.__sha = f.sha;
+          json.__path = f.path;
+          return json;
+        } catch { return null; }
+      }));
+      allData = results.filter(Boolean);
+      populateMesSelect();
+      populateHistBarSelect();
+      render();
+    } catch (e) {
+      console.error("Error cargando datos:", e);
+    }
+  }
+
+  function populateMesSelect() {
+    const meses = [...new Set(allData.map(d => d.mes))].sort().reverse();
+    const sel = document.getElementById("mesSelect");
+    const current = sel.value;
+    sel.innerHTML = "";
+    if (meses.length === 0) {
+      const opt = document.createElement("option");
+      opt.textContent = "Sin auditorías cargadas"; opt.value = "";
+      sel.appendChild(opt);
+      return;
+    }
+    meses.forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+    sel.value = meses.includes(current) ? current : meses[0];
+  }
+
+  function populateHistBarSelect() {
+    const sel = document.getElementById("histBarSelect");
+    if (sel.options.length) return;
+    BARES.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b; opt.textContent = "@" + b;
+      sel.appendChild(opt);
+    });
+  }
+
+  function render() {
+    const mes = document.getElementById("mesSelect").value;
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    const enMes = allData.filter(d => d.mes === mes);
+    let aprobadas = 0, sumaPuntaje = 0, conDatos = 0;
+
+    BARES.forEach(bar => {
+      const d = enMes.find(x => x.bar === bar);
+      const card = document.createElement("div");
+      card.className = "card" + (d ? "" : " empty");
+
+      if (!d) {
+        card.innerHTML = `
+          <div class="card-head"><span class="handle">${bar}</span><span class="seal none">Sin auditar</span></div>
+          <div class="empty-msg">Todavía no hay auditoría cargada para este mes.</div>
+        `;
+        grid.appendChild(card);
+        return;
+      }
+
+      conDatos++;
+      sumaPuntaje += d.puntaje_total || 0;
+      if (d.aprobado) aprobadas++;
+
+      card.appendChild(buildCard(d));
+      grid.appendChild(card);
+    });
+
+    const promedio = conDatos ? Math.round(sumaPuntaje / conDatos) : 0;
+    document.getElementById("summaryBar").innerHTML = `
+      <span><b>${conDatos}</b> / ${BARES.length} cuentas auditadas</span>
+      <span><b>${aprobadas}</b> aprobadas</span>
+      <span>promedio <b>${promedio}</b>/100</span>
+    `;
+  }
+
+  function buildCard(d) {
+    const wrap = document.createElement("div");
+    wrap.style.display = "contents";
+
+    const bars = Object.entries(d.criterios || {}).map(([key, c]) => `
+      <div class="bar-row">
+        <span>${CRITERIOS_LABELS[key] || key}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((c.puntaje / c.max) * 100)}%"></div></div>
+        <span class="mono">${c.puntaje}/${c.max}</span>
+      </div>
+    `).join("");
+
+    const head = document.createElement("div");
+    head.innerHTML = `
+      <div class="card-head">
+        <span class="handle">${d.bar}</span>
+        <span class="seal ${d.aprobado ? "pass" : "fail"}">${d.aprobado ? "Aprobado" : "No aprobado"}</span>
+      </div>
+      <div class="score-row">
+        <span class="num ${d.aprobado ? "" : "fail"}">${d.puntaje_total}</span>
+        <span class="max">/ 100</span>
+      </div>
+      <div class="bars">${bars}</div>
+    `;
+
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    details.appendChild(summary);
+
+    const body = document.createElement("div");
+    body.className = "detail-body";
+    body.appendChild(renderReadOnlyDetail(d));
+
+    const editToggle = document.createElement("button");
+    editToggle.className = "edit-toggle";
+    editToggle.textContent = "✎ ajustar puntajes";
+    editToggle.addEventListener("click", () => {
+      body.innerHTML = "";
+      body.appendChild(renderEditForm(d, () => { body.innerHTML = ""; body.appendChild(renderReadOnlyDetail(d)); body.appendChild(editToggle); }));
+    });
+
+    body.appendChild(editToggle);
+    details.appendChild(body);
+
+    const container = document.createElement("div");
+    container.appendChild(head);
+    container.appendChild(details);
+
+    const outer = document.createDocumentFragment();
+    Array.from(container.childNodes).forEach(n => outer.appendChild(n));
+    return outer;
+  }
+
+  function renderReadOnlyDetail(d) {
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.flexDirection = "column";
+    div.style.gap = "10px";
+    const critHtml = Object.entries(d.criterios || {}).map(([key, c]) => `
+      <div><b>${CRITERIOS_LABELS[key] || key} (${c.puntaje}/${c.max}):</b> ${c.comentario || ""}</div>
+    `).join("");
+    const plan = (d.plan_de_accion || []).map(p => `<li>${p}</li>`).join("");
+    div.innerHTML = critHtml + (plan ? `<div><b>Plan de acción</b><ul class="plan">${plan}</ul></div>` : "");
+    return div;
+  }
+
+  function renderEditForm(d, onDone) {
+    const form = document.createElement("div");
+    const critKeys = Object.keys(d.criterios || {});
+
+    critKeys.forEach(key => {
+      const c = d.criterios[key];
+      const row = document.createElement("div");
+      row.className = "crit-edit";
+      row.innerHTML = `
+        <input type="number" min="0" max="${c.max}" value="${c.puntaje}" data-key="${key}" data-field="puntaje" />
+        <textarea data-key="${key}" data-field="comentario">${c.comentario || ""}</textarea>
+      `;
+      form.appendChild(row);
+      const lbl = document.createElement("div");
+      lbl.style.fontSize = "11px"; lbl.style.color = "var(--muted)"; lbl.style.marginTop = "-4px"; lbl.style.marginBottom = "4px";
+      lbl.textContent = `${CRITERIOS_LABELS[key] || key} — máximo ${c.max}`;
+      form.insertBefore(lbl, row);
+    });
+
+    const planWrap = document.createElement("div");
+    planWrap.className = "plan-edit";
+    planWrap.innerHTML = `
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Plan de acción (uno por línea)</div>
+      <textarea id="editPlan">${(d.plan_de_accion || []).join("\\n")}</textarea>
+    `;
+    form.appendChild(planWrap);
+
+    const statusEl = document.createElement("div");
+    statusEl.className = "save-status";
+
+    const actions = document.createElement("div");
+    actions.className = "edit-actions";
+    const btnCancel = document.createElement("button");
+    btnCancel.className = "ghost"; btnCancel.textContent = "Cancelar";
+    btnCancel.addEventListener("click", onDone);
+    const btnSave = document.createElement("button");
+    btnSave.textContent = "Guardar cambios";
+    btnSave.addEventListener("click", async () => {
+      if (!config.token) {
+        statusEl.textContent = "Necesitás configurar tu token en ⚙ Config para guardar.";
+        statusEl.className = "save-status err";
+        return;
+      }
+      const updated = JSON.parse(JSON.stringify(d));
+      form.querySelectorAll("input[data-field='puntaje']").forEach(inp => {
+        updated.criterios[inp.dataset.key].puntaje = Number(inp.value);
+      });
+      form.querySelectorAll("textarea[data-field='comentario']").forEach(ta => {
+        updated.criterios[ta.dataset.key].comentario = ta.value;
+      });
+      updated.plan_de_accion = document.getElementById("editPlan").value.split("\\n").map(s => s.trim()).filter(Boolean);
+      updated.puntaje_total = Object.values(updated.criterios).reduce((s, c) => s + Number(c.puntaje), 0);
+      updated.aprobado = updated.puntaje_total >= 80;
+      updated.editado_manualmente = true;
+      updated.fecha_edicion = new Date().toISOString();
+      delete updated.__sha; delete updated.__path;
+
+      statusEl.textContent = "Guardando…";
+      statusEl.className = "save-status";
+      try {
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(updated, null, 2))));
+        const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${d.__path}`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${config.token}`,
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: `Ajuste manual: ${d.bar} ${d.mes}`,
+            content,
+            sha: d.__sha
+          })
+        });
+        if (res.ok) {
+          const respJson = await res.json();
+          Object.assign(d, updated);
+          d.__sha = respJson.content.sha;
+          statusEl.textContent = "Guardado en el repo.";
+          statusEl.className = "save-status ok";
+          setTimeout(() => { onDone(); render(); }, 700);
+        } else {
+          const errBody = await res.text();
+          statusEl.textContent = `Error (${res.status}) al guardar: ${errBody}`;
+          statusEl.className = "save-status err";
+        }
+      } catch (e) {
+        statusEl.textContent = "Error de red: " + e.message;
+        statusEl.className = "save-status err";
+      }
+    });
+    actions.appendChild(btnCancel);
+    actions.appendChild(btnSave);
+    form.appendChild(actions);
+    form.appendChild(statusEl);
+
+    return form;
+  }
+
+  document.getElementById("mesSelect").addEventListener("change", render);
+
+  // ---------- Histórico por bar ----------
+  document.getElementById("histBarSelect").addEventListener("change", renderHistorico);
+
+  function renderHistorico() {
+    const bar = document.getElementById("histBarSelect").value;
+    const content = document.getElementById("histContent");
+    if (!bar) { content.innerHTML = `<div class="empty-msg">Configurá el repo primero.</div>`; return; }
+
+    const registros = allData.filter(d => d.bar === bar).sort((a, b) => a.mes.localeCompare(b.mes));
+
+    if (registros.length === 0) {
+      content.innerHTML = `<div class="empty-msg">Todavía no hay auditorías cargadas para @${bar}.</div>`;
+      return;
+    }
+
+    const max = 100;
+    const chartCols = registros.map(r => `
+      <div class="col">
+        <span class="val">${r.puntaje_total}</span>
+        <div class="bar ${r.aprobado ? "" : "fail"}" style="height:${(r.puntaje_total / max) * 100}%"></div>
+        <span class="lbl">${r.mes}</span>
+      </div>
+    `).join("");
+
+    const promedio = Math.round(registros.reduce((s, r) => s + r.puntaje_total, 0) / registros.length);
+    const aprobadas = registros.filter(r => r.aprobado).length;
+
+    const rows = registros.map(r => `
+      <tr>
+        <td>${r.mes}</td>
+        <td class="mono">${r.puntaje_total}/100</td>
+        <td><span class="seal ${r.aprobado ? "pass" : "fail"}">${r.aprobado ? "Aprobado" : "No aprobado"}</span></td>
+        <td>${Object.entries(r.criterios || {}).map(([k, c]) => `${CRITERIOS_LABELS[k] || k}: ${c.puntaje}/${c.max}`).join(" · ")}</td>
+      </tr>
+    `).join("");
+
+    content.innerHTML = `
+      <div class="summary-bar">
+        <span><b>${registros.length}</b> meses auditados</span>
+        <span><b>${aprobadas}</b> aprobados</span>
+        <span>promedio <b>${promedio}</b>/100</span>
+      </div>
+      <div class="hist-chart">${chartCols}</div>
+      <table class="hist-table">
+        <thead><tr><th>Mes</th><th>Puntaje</th><th>Estado</th><th>Detalle por criterio</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // ---------- Modal nueva auditoría ----------
+  const modalAuditoria = document.getElementById("modalAuditoria");
+  const inpBar = document.getElementById("inpBar");
+  BARES.forEach(b => {
+    const opt = document.createElement("option");
+    opt.value = b; opt.textContent = "@" + b;
+    inpBar.appendChild(opt);
+  });
+
+  document.getElementById("btnNueva").addEventListener("click", () => {
+    config = loadConfig();
+    if (!config.owner || !config.repo || !config.token) {
+      openConfigModal("Completá owner, repo y token para poder cargar auditorías.");
+      return;
+    }
+    document.getElementById("auditoriaStatus").textContent = "";
+    const now = new Date();
+    document.getElementById("inpMes").value = now.toISOString().slice(0,7);
+    modalAuditoria.classList.add("open");
+  });
+  document.getElementById("btnCancelarAuditoria").addEventListener("click", () => modalAuditoria.classList.remove("open"));
+
+  document.getElementById("btnDispararAuditoria").addEventListener("click", async () => {
+    const bar = inpBar.value;
+    const mes = document.getElementById("inpMes").value;
+    const contenido = document.getElementById("inpContenido").value.trim();
+    const kv = document.getElementById("inpKV").value.trim();
+    const statusEl = document.getElementById("auditoriaStatus");
+
+    if (!mes || !contenido) {
+      statusEl.textContent = "Completá al menos el mes y el contenido publicado.";
+      statusEl.className = "status-msg err";
+      return;
+    }
+
+    statusEl.textContent = "Disparando análisis…";
+    statusEl.className = "status-msg";
+
+    try {
+      const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/actions/workflows/audit.yml/dispatches`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${config.token}`,
+          "Accept": "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ ref: "main", inputs: { bar, mes, contenido, kv } })
+      });
+
+      if (res.status === 204) {
+        statusEl.textContent = "Listo. Corriendo en GitHub Actions — el resultado aparece en 1-2 minutos (actualizá la página).";
+        statusEl.className = "status-msg ok";
+      } else {
+        const errBody = await res.text();
+        statusEl.textContent = `Error (${res.status}): ${errBody}`;
+        statusEl.className = "status-msg err";
+      }
+    } catch (e) {
+      statusEl.textContent = "Error de red al disparar el análisis: " + e.message;
+      statusEl.className = "status-msg err";
+    }
+  });
+
+  // ---------- Modal config ----------
+  const modalConfig = document.getElementById("modalConfig");
+  function openConfigModal(hint) {
+    config = loadConfig();
+    document.getElementById("cfgOwner").value = config.owner;
+    document.getElementById("cfgRepo").value = config.repo;
+    document.getElementById("cfgToken").value = config.token;
+    const hintEl = document.getElementById("configHint");
+    if (hint) {
+      hintEl.textContent = hint;
+      hintEl.className = "hint warn";
+    } else {
+      hintEl.textContent = 'El token queda guardado solo en tu navegador (localStorage), nunca se sube al repo. Necesita permiso "Actions: Read and write" y "Contents: Read and write" sobre este repositorio.';
+      hintEl.className = "hint";
+    }
+    modalConfig.classList.add("open");
+  }
+  document.getElementById("btnConfig").addEventListener("click", () => openConfigModal());
+  document.getElementById("btnCancelarConfig").addEventListener("click", () => modalConfig.classList.remove("open"));
+  document.getElementById("btnGuardarConfig").addEventListener("click", () => {
+    const cfg = {
+      owner: document.getElementById("cfgOwner").value.trim(),
+      repo: document.getElementById("cfgRepo").value.trim(),
+      token: document.getElementById("cfgToken").value.trim()
+    };
+    saveConfig(cfg);
+    config = cfg;
+    document.getElementById("repoLabel").textContent = cfg.owner && cfg.repo ? `${cfg.owner}/${cfg.repo}` : "(configurá el repo)";
+    modalConfig.classList.remove("open");
+    fetchData();
+  });
+
+  fetchData();
+</script>
+
+</body>
+</html>
